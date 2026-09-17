@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diseñador de Pacientes Virtuales</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #e3f2fd;
+            --text-color: #333333;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --border-color: #cccccc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            width: 100%;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        header h1 { margin: 0; font-size: 2.5rem; }
+        header p { margin: 0.5rem 0 0 0; font-size: 1.2rem; opacity: 0.9; }
+
+        /* VISTAS */
+        #landing-view, #wizard-view {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .hidden { display: none !important; }
+
+        /* LANDING PAGE CARDS */
+        .card-container { display: flex; gap: 2rem; margin-top: 2rem; flex-wrap: wrap; justify-content: center;}
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            width: 300px;
+            text-align: center;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-color: var(--primary-color); }
+        .card .icon { font-size: 4rem; margin-bottom: 1.5rem; }
+        .card h2 { color: var(--primary-color); font-size: 1.5rem; margin-top: 0;}
+
+        /* WIZARD ESTILOS */
+        .wizard-container {
+            background: white;
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        /* BARRA DE PROGRESO */
+        .progress-container { margin-bottom: 2rem; }
+        .progress-bar {
+            width: 100%;
+            background-color: var(--border-color);
+            border-radius: 8px;
+            height: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 12.5%;
+            transition: width 0.3s ease;
+        }
+        .step-indicator { font-weight: bold; margin-bottom: 0.5rem; color: var(--primary-color); }
+
+        /* PASOS DEL FORMULARIO */
+        .step { display: none; animation: fadeIn 0.4s; }
+        .step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .step h2 { border-bottom: 2px solid var(--secondary-color); padding-bottom: 0.5rem; }
+        
+        /* CONTROLES DE FORMULARIO */
+        label { font-weight: bold; display: block; margin-top: 1rem; margin-bottom: 0.5rem; }
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        textarea { resize: vertical; min-height: 100px; }
+        
+        .checkbox-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; padding-left: 0.5rem; border-left: 3px solid var(--secondary-color); }
+        .checkbox-item { display: flex; align-items: center; gap: 0.5rem; font-weight: normal; margin-top: 0;}
+        
+        /* BOTONES DE NAVEGACIÓN */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1rem;
+        }
+        button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        .btn-prev { background-color: #6c757d; color: white; }
+        .btn-next { background-color: var(--primary-color); color: white; }
+        .btn-action { background-color: #28a745; color: white; width: 100%; margin-top: 1rem; padding: 1rem; font-size: 1.1rem;}
+        .btn-drive { background-color: #fbbc04; color: #333; width: 100%; margin-top: 1rem; padding: 1rem; font-size: 1.1rem; text-decoration: none; display: block; text-align: center; border-radius: 6px; font-weight: bold;}
+
+        /* PREVIEW DEL PROMPT */
+        #prompt-preview {
+            background-color: #272822;
+            color: #f8f8f2;
+            font-family: monospace;
+            padding: 1rem;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            min-height: 300px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Simulación Clínica con IA</h1>
+        <p>Plataforma de diseño y gestión de escenarios estructurados</p>
+    </header>
+
+    <!-- VISTA 1: LANDING PAGE -->
+    <div id="landing-view">
+        <div class="card-container">
+            <a href="https://drive.google.com/drive/folders/1Eh0kzUqZ1OqIhl81j_lsG29tgWy0SdzZ" target="_blank" class="card">
+                <div class="icon">📁</div>
+                <h2>Ver pacientes creados</h2>
+                <p>Accedé a la biblioteca de escenarios validados en Google Drive listos para utilizar.</p>
+            </a>
+            <div class="card" onclick="iniciarWizard()">
+                <div class="icon">💻</div>
+                <h2>Crear un nuevo paciente</h2>
+                <p>Diseñá un prompt estructurado definiendo competencias, objetivos, información oculta y fricción.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA 2: WIZARD -->
+    <div id="wizard-view" class="hidden">
+        <div class="wizard-container">
+            
+            <div class="progress-container">
+                <div class="step-indicator" id="step-text">Paso 1 de 8: Competencias</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+
+            <form id="prompt-form">
+                
+                <!-- PASO 1: COMPETENCIAS -->
+                <div class="step active" id="step-1">
+                    <h2>1. Competencias a Evaluar</h2>
+                    <p>Seleccioná las habilidades principales que el alumno deberá demostrar.</p>
+                    
+                    <label>Comunicación y Relación Médico-Paciente:</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" name="comp" value="Empatía"> Empatía</label>
+                        <label class="checkbox-item"><input type="checkbox" name="comp" value="Validación de angustia"> Validación de angustia</label>
+                        <label class="checkbox-item"><input type="checkbox" name="comp" value="Encuadre (signposting)"> Encuadre (signposting)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="comp" value="Recopilación de datos clínicos"> Recopilación de datos clínicos</label>
+                        <label class="checkbox-item"><input type="checkbox" name="comp" value="Uso de protocolos estandarizados"> Uso de protocolos estandarizados</label>
+                        <label class="checkbox-item"><input type="checkbox" name="comp" value="Toma de consentimiento"> Toma de consentimiento</label>
+                    </div>
+
+                    <label>Razonamiento Clínico:</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" name="comp" value="Identificación del motivo de consulta"> Identificación del motivo de consulta</label>
+                        <label class="checkbox-item"><input type="checkbox" name="comp" value="Caracterización del síntoma principal"> Caracterización del síntoma principal</label>
+                        <label class="checkbox-item"><input type="checkbox" name="comp" value="Investigación de síntomas asociados"> Investigación de síntomas asociados</label>
+                        <label class="checkbox-item"><input type="checkbox" name="comp" value="Búsqueda e identificación de datos críticos"> Búsqueda e identificación de datos críticos</label>
+                    </div>
+
+                    <label>Toma de Decisiones y Metacognición:</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" name="comp" value="Aplicación de reglas de decisión clínica"> Aplicación de reglas de decisión clínica</label>
+                        <label class="checkbox-item"><input type="checkbox" name="comp" value="Estrategias de mitigación de sesgos (proceso dual)"> Estrategias de mitigación de sesgos (proceso dual)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="comp" value="Metacognición general"> Metacognición general</label>
+                    </div>
+                </div>
+
+                <!-- PASO 2: OBJETIVOS -->
+                <div class="step" id="step-2">
+                    <h2>2. Objetivos de Aprendizaje</h2>
+                    <label>Objetivo Principal:</label>
+                    <input type="text" id="obj-prin" placeholder="Ej: Identificar contraindicaciones para trombólisis en un paciente con foco motor">
+                    
+                    <label>Objetivos Secundarios (Opcional):</label>
+                    <textarea id="obj-sec" placeholder="Ej: 1) Manejar la angustia del familiar. 2) Calcular score NIHSS."></textarea>
+                </div>
+
+                <!-- PASO 3: ESCENARIO -->
+                <div class="step" id="step-3">
+                    <h2>3. Escenario</h2>
+                    <label>Entorno Clínico:</label>
+                    <select id="entorno">
+                        <option value="Shock Room">Shock Room</option>
+                        <option value="Guardia / Emergencias">Guardia / Emergencias</option>
+                        <option value="Prehospitalario / Ambulancia">Prehospitalario / Ambulancia</option>
+                        <option value="Triage / Despacho telefónico">Triage / Despacho telefónico</option>
+                        <option value="Consultorio Externo">Consultorio Externo</option>
+                        <option value="Sala de Internación">Sala de Internación</option>
+                    </select>
+
+                    <label>Desafío Inicial (Breve viñeta disparadora):</label>
+                    <textarea id="desafio" placeholder="Ej: Paciente de 67 años ingresa traído por familiares por alteración del habla de inicio súbito..."></textarea>
+                </div>
+
+                <!-- PASO 4: ROLES -->
+                <div class="step" id="step-4">
+                    <h2>4. Rol y Actitud (Configuración del Actor)</h2>
+                    
+                    <label>A. Identidad del Actor (Rol de la IA):</label>
+                    <select id="rol-ia">
+                        <option value="Paciente">Paciente</option>
+                        <option value="Familiar / Acompañante">Familiar / Acompañante</option>
+                        <option value="Operador de Emergencias / Despachante">Operador de Emergencias / Despachante</option>
+                        <option value="Interconsultor / Colega">Interconsultor / Colega</option>
+                        <option value="Enfermero/a">Enfermero/a</option>
+                        <option value="Médico / Estudiante (si el usuario es actor)">Médico / Estudiante (si el usuario es actor)</option>
+                    </select>
+
+                    <label>Rol del Participante (Usuario):</label>
+                    <select id="rol-user">
+                        <option value="Médico de Guardia / Emergencias">Médico de Guardia / Emergencias</option>
+                        <option value="Residente (R1/R2)">Residente (R1/R2)</option>
+                        <option value="Médico Prehospitalario">Médico Prehospitalario</option>
+                        <option value="Operador de Despacho (Triage)">Operador de Despacho (Triage)</option>
+                        <option value="Interconsultor (Especialista)">Interconsultor (Especialista)</option>
+                        <option value="Actor de paciente estandarizado en entrenamiento">Actor de paciente estandarizado en entrenamiento</option>
+                    </select>
+
+                    <label>B. Estado Emocional / Actitud Basal (IA):</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" name="actitud" value="Colaborador y tranquilo"> Colaborador y tranquilo</label>
+                        <label class="checkbox-item"><input type="checkbox" name="actitud" value="Angustiado / Llorando"> Angustiado / Llorando / Desesperado</label>
+                        <label class="checkbox-item"><input type="checkbox" name="actitud" value="Hostil / Demandante / A la defensiva"> Hostil / Demandante / A la defensiva</label>
+                        <label class="checkbox-item"><input type="checkbox" name="actitud" value="Confuso / Desorientado"> Confuso / Desorientado</label>
+                        <label class="checkbox-item"><input type="checkbox" name="actitud" value="Lacónico (habla poco)"> Lacónico (habla poco, hay que sacarle las palabras)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="actitud" value="Minimizador / Negador"> Minimizador / Negador (resta importancia a los síntomas)</label>
+                    </div>
+
+                    <label>C. Condicionantes Físicos en la Comunicación:</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" name="fisico" value="Ninguno (habla normal)"> Ninguno (habla normal)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="fisico" value="Disnea / Taquipnea (responde con frases muy cortas, entrecortadas)"> Disnea / Taquipnea (responde con frases muy cortas)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="fisico" value="Dolor severo (interrumpe con quejidos, le cuesta concentrarse)"> Dolor severo (interrumpe con quejidos, desconcentrado)</label>
+                    </div>
+
+                    <label>D. Reglas de Interacción y Detalles del Personaje:</label>
+                    <textarea id="detalles-ia" placeholder="Ej: Se llama Marta, 56 años. Usa lenguaje muy coloquial. No revelará que el paciente consumió cocaína a menos que el médico pregunte específicamente y sin juzgar. Si el médico es brusco, se pondrá a la defensiva. Nunca debe dar su propio diagnóstico."></textarea>
+                </div>
+
+                <!-- PASO 5: DATOS CLÍNICOS -->
+                <div class="step" id="step-5">
+                    <h2>5. Datos del Caso (Historia Clínica de base)</h2>
+                    <label>Datos Filiatorios:</label>
+                    <input type="text" id="datos-fil" placeholder="Ej: Fernando Lorenz, 67 años.">
+                    
+                    <label>Enfermedad Actual / Signos Vitales:</label>
+                    <textarea id="datos-enf" placeholder="Ej: Afasia de expresión, hemiparesia derecha. TA 180/100."></textarea>
+                    
+                    <label>Antecedentes y Medicación:</label>
+                    <textarea id="datos-ant" placeholder="Ej: HTA (Losartán), Arritmia (Sintrom 1mg). ACV previo hace 2 años."></textarea>
+                </div>
+
+                <!-- PASO 6: INFO OCULTA -->
+                <div class="step" id="step-6">
+                    <h2>6. Información Oculta (Revelación Progresiva)</h2>
+                    <p>¿Qué datos la IA NO debe revelar a menos que se le pregunte específicamente?</p>
+                    <textarea id="info-oculta" placeholder="- Última vez visto normal (LKW): Hace 2 horas exactas.&#10;- Toma anticoagulantes.&#10;(La IA debe dar rodeos si no se hace la pregunta precisa)"></textarea>
+                </div>
+
+                <!-- PASO 7: REGLAS Y FEEDBACK -->
+                <div class="step" id="step-7">
+                    <h2>7. Motores de Fricción y Feedback</h2>
+                    
+                    <label>Reglas de Comportamiento (Seleccionar activadores):</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" name="friccion" value="Penalizar ametrallamiento (preguntas múltiples simultáneas). Mostrar confusión/agobio."> Penalizar "ametrallamiento" de preguntas</label>
+                        <label class="checkbox-item"><input type="checkbox" name="friccion" value="Penalizar falta de encuadre. Si hace preguntas directas/invasivas sin explicar el motivo, mostrar reticencia."> Penalizar falta de encuadre (Signposting)</label>
+                        <label class="checkbox-item"><input type="checkbox" name="friccion" value="Penalizar lenguaje técnico excesivo. Exigir aclaraciones y asustarse."> Penalizar lenguaje técnico</label>
+                        <label class="checkbox-item"><input type="checkbox" name="friccion" value="Penalizar registro anímico inadecuado (tono jocoso/informal). Mostrar indignación."> Penalizar registro anímico inadecuado</label>
+                        <label class="checkbox-item"><input type="checkbox" name="friccion" value="Recompensar validación emocional. Si el usuario es empático, el personaje colabora más."> Recompensar empatía / validación emocional</label>
+                        <label class="checkbox-item"><input type="checkbox" name="friccion" value="Simular el paso del tiempo. Si el participante se demora, el cuadro empeora espontáneamente."> Simular el paso del tiempo (Reloj clínico)</label>
+                        <label class="checkbox-item" style="color:red; font-weight:bold;"><input type="checkbox" name="friccion" value="PROHIBIDO ROMPER EL PERSONAJE: Bajo ninguna circunstancia admitir ser una IA durante la simulación." checked> Bloqueo estricto de personaje (Recomendado)</label>
+                    </div>
+
+                    <label>Perla Final para el Debriefing:</label>
+                    <input type="text" id="perla" placeholder="Ej: En emergencias neurológicas, el 'Last Known Well' define el reloj terapéutico.">
+                </div>
+
+                <!-- PASO 8: EXPORTACIÓN -->
+                <div class="step" id="step-8">
+                    <h2>8. ¡Paciente Virtual Listo!</h2>
+                    <p>Revisá el prompt generado. Podés editarlo directamente aquí si lo necesitás.</p>
+                    <textarea id="prompt-preview"></textarea>
+                    
+                    <button type="button" class="btn-action" onclick="descargarDoc()">⬇️ Descargar Prompt (.doc)</button>
+                    <a href="https://drive.google.com/drive/folders/1Eh0kzUqZ1OqIhl81j_lsG29tgWy0SdzZ" target="_blank" class="btn-drive">☁️ Subir al Repositorio en Drive</a>
+                </div>
+
+                <!-- BOTONES DE NAVEGACIÓN -->
+                <div class="nav-buttons">
+                    <button type="button" id="btn-prev" class="btn-prev" onclick="cambiarPaso(-1)" style="display:none;">Anterior</button>
+                    <button type="button" id="btn-next" class="btn-next" onclick="cambiarPaso(1)">Siguiente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let pasoActual = 1;
+        const totalPasos = 8;
+
+        function iniciarWizard() {
+            document.getElementById('landing-view').classList.add('hidden');
+            document.getElementById('wizard-view').classList.remove('hidden');
+        }
+
+        function cambiarPaso(direccion) {
+            document.getElementById(`step-${pasoActual}`).classList.remove('active');
+            pasoActual += direccion;
+            
+            // Validar límites
+            if (pasoActual < 1) pasoActual = 1;
+            if (pasoActual > totalPasos) pasoActual = totalPasos;
+
+            document.getElementById(`step-${pasoActual}`).classList.add('active');
+            
+            // Actualizar UI
+            document.getElementById('step-text').innerText = `Paso ${pasoActual} de ${totalPasos}`;
+            document.getElementById('progress-fill').style.width = `${(pasoActual / totalPasos) * 100}%`;
+
+            // Botones
+            document.getElementById('btn-prev').style.display = pasoActual === 1 ? 'none' : 'block';
+            
+            if (pasoActual === totalPasos) {
+                document.getElementById('btn-next').style.display = 'none';
+                generarPrompt();
+            } else {
+                document.getElementById('btn-next').style.display = 'block';
+                document.getElementById('btn-next').innerText = 'Siguiente';
+            }
+        }
+
+        function generarPrompt() {
+            // Recopilar selecciones múltiples
+            let competencias = [];
+            document.querySelectorAll('input[name="comp"]:checked').forEach(el => competencias.push(el.value));
+            
+            let actitudes = [];
+            document.querySelectorAll('input[name="actitud"]:checked').forEach(el => actitudes.push(el.value));
+            
+            let fisicos = [];
+            document.querySelectorAll('input[name="fisico"]:checked').forEach(el => fisicos.push(el.value));
+            
+            let friccion = [];
+            document.querySelectorAll('input[name="friccion"]:checked').forEach(el => friccion.push(el.value));
+
+            // Construir el texto
+            let promptText = `==================================================\n`;
+            promptText += `ROL Y OBJETIVO DEL SIMULADOR\n`;
+            promptText += `==================================================\n`;
+            promptText += `Actúa como especialista en simulación médica. Tu tarea es ejecutar un escenario interactivo.\n\n`;
+            
+            if (competencias.length > 0) {
+                promptText += `[COMPETENCIAS A EVALUAR]\n- ${competencias.join('\n- ')}\n\n`;
+            }
+            
+            promptText += `[OBJETIVO PRINCIPAL]: ${document.getElementById('obj-prin').value}\n`;
+            if(document.getElementById('obj-sec').value) {
+                promptText += `[OBJETIVOS SECUNDARIOS]:\n${document.getElementById('obj-sec').value}\n\n`;
+            }
+
+            promptText += `[ESCENARIO]: Entorno: ${document.getElementById('entorno').value}. \nDesafío inicial: ${document.getElementById('desafio').value}\n\n`;
+            
+            promptText += `==================================================\n`;
+            promptText += `DATOS DEL ESCENARIO (OCULTOS AL USUARIO)\n`;
+            promptText += `==================================================\n`;
+            promptText += `[TU ROL - IA]: Eres ${document.getElementById('rol-ia').value}.\n`;
+            if (actitudes.length > 0) promptText += `Actitud / Estado Emocional: ${actitudes.join(' / ')}.\n`;
+            if (fisicos.length > 0) promptText += `Condicionantes Físicos: ${fisicos.join(' / ')}.\n`;
+            promptText += `Detalles y Agenda Oculta: ${document.getElementById('detalles-ia').value}\n\n`;
+            
+            promptText += `[ROL DEL ALUMNO]: ${document.getElementById('rol-user').value}.\n\n`;
+            
+            promptText += `[HISTORIA CLÍNICA BASE]\n`;
+            promptText += `Filiación: ${document.getElementById('datos-fil').value}\n`;
+            promptText += `Enfermedad Actual: ${document.getElementById('datos-enf').value}\n`;
+            promptText += `Antecedentes: ${document.getElementById('datos-ant').value}\n\n`;
+            
+            promptText += `[INFORMACIÓN OCULTA Y REVELACIÓN PROGRESIVA]\n${document.getElementById('info-oculta').value}\n\n`;
+
+            promptText += `==================================================\n`;
+            promptText += `REGLAS DE INTERACCIÓN Y MOTORES DE FRICCIÓN\n`;
+            promptText += `==================================================\n`;
+            if (friccion.length > 0) {
+                promptText += `- ${friccion.join('\n- ')}\n\n`;
+            }
+
+            promptText += `==================================================\n`;
+            promptText += `MODO DEBRIEFING Y FEEDBACK\n`;
+            promptText += `==================================================\n`;
+            promptText += `Al recibir el comando "FIN DE SIMULACIÓN", abandona tu personaje y actúa como instructor. Evalúa el desempeño según las competencias marcadas. Entrega un formato Plus/Delta (2 fortalezas, 2 oportunidades de mejora).\n`;
+            promptText += `Incluye esta Perla Final: "${document.getElementById('perla').value}"\n\n`;
+
+            promptText += `==================================================\n`;
+            promptText += `COMANDOS DE CONTROL (REGLA FINAL)\n`;
+            promptText += `==================================================\n`;
+            promptText += `Espera el comando "INICIO DE SIMULACIÓN" para comenzar hablando en personaje. No digas nada más hasta recibirlo.`;
+
+            document.getElementById('prompt-preview').value = promptText;
+        }
+
+        function descargarDoc() {
+            // Crea un archivo .doc básico utilizando formato HTML soportado por MS Word
+            const preHtml = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Prompt Paciente Virtual</title></head><body><pre style='font-family: Arial, sans-serif; font-size: 11pt; white-space: pre-wrap;'>";
+            const postHtml = "</pre></body></html>";
+            const content = document.getElementById('prompt-preview').value;
+            const html = preHtml + content + postHtml;
+
+            const blob = new Blob(['\ufeff', html], {
+                type: 'application/msword'
+            });
+            
+            const url = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(html);
+            const filename = 'Prompt_Paciente_Virtual.doc';
+            
+            const downloadLink = document.createElement("a");
+            document.body.appendChild(downloadLink);
+            
+            if(navigator.msSaveOrOpenBlob ){
+                navigator.msSaveOrOpenBlob(blob, filename);
+            } else {
+                downloadLink.href = url;
+                downloadLink.download = filename;
+                downloadLink.click();
+            }
+            document.body.removeChild(downloadLink);
+        }
+    </script>
+</body>
+</html>
+`
